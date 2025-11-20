@@ -1,6 +1,8 @@
 # Beginning the ICS Threat Intelligence Practice
 
-I have officially started a practice project focused on building threat intelligence skills in a way that feels natural to me instead of forcing myself into someone else’s workflow. I want to learn how to investigate, interpret, and communicate threats by actually doing the work, not by memorizing someone else’s checklist. Today marks the first entry documenting that process.
+I have never learned anything by watching from the sidelines. I’m a tactile learner - I understand things by doing them. Instead of memorizing someone else’s workflow, I decided to build threat intelligence skills through practice.
+
+This project is my way of learning by investigating real threats, interpreting their impact, and communicating them clearly. Today marks the first entry documenting that process.
 
 ---
 
@@ -20,7 +22,7 @@ That made industrial control systems the best place to start.
 
 As part of laying a foundation, I set up RSS feeds. They will help in the long term. However, the incident I chose did not come from them. I began with a search. I looked specifically for ransomware activity affecting industrial operations and kept seeing the name LockBit appear. That began the rabbit hole.
 
-A few articles later, I realized that the operational risk did not come from tampering with PLC logic, but from losing visibility into system behavior. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, then a hunch. I skimmed through the techniques and found that, although the technique itself is not attributed to LockBit, MITRE ATT&CK for ICS — T0828 (Loss of View) can occur when ransomware encrypts operator visibility systems through other techniques.
+A few articles later, I realized that the operational risk did not come from tampering with PLC logic, but from losing visibility into system behavior. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, then a hunch. I skimmed through the techniques and found that, although the technique itself is not attributed to LockBit, MITRE ATT&CK for ICS - T0828 (Loss of View) can occur when ransomware encrypts operator visibility systems through other techniques.
 
 I did not need MITRE to tell me why Loss of View is dangerous. I already know what it means to lose sight of a process. I have lived inside that world.
 
