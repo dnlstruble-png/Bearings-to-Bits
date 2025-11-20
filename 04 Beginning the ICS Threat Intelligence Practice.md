@@ -20,7 +20,7 @@ That made industrial control systems the best place to start.
 
 As part of laying a foundation, I set up RSS feeds. They will help in the long term. However, the incident I chose did not come from them. I began with a search. I looked specifically for ransomware activity affecting industrial operations and kept seeing the name LockBit appear. That began the rabbit hole.
 
-A few articles later, I realized that the most serious problems did not come from tampering with PLC logic. They came from attacks that took away operational visibility. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, followed by a hunch. I skimmed through the techniques and found Loss of View (T0828), which clearly matched what I was seeing.
+A few articles later, I realized that the most serious problems did not come from tampering with PLC logic. They came from attacks that took away operational visibility. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, followed by a hunch. I skimmed through the techniques and found that, although not the technique was not listed, MITRE ATT&CK for ICS — T0828 (Loss of View) can occur when ransomware encrypts operator visibility systems via other availible techniques.
 
 I did not need MITRE to tell me why Loss of View is dangerous. I already know what it means to lose sight of a process. I have lived inside that world.
 
