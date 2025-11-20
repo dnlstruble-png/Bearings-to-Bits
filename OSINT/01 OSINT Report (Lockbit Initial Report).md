@@ -38,7 +38,7 @@ LockBit creates operational consequences when it disrupts visibility systems, in
 - MES / SCADA Operator Terminals
 - Historian / Process Data Servers
 
-Disabling these systems leads to **Loss of View (MITRE ATT&CK for ICS: T0828)**. Without visibility into process values such as temperature, pressure, or flow, operators cannot ensure safe operation, which can result in:
+Disabling these systems can create conditions consistent with MITRE ICS T0828 (Loss of View), used here as an impact classification — not attacker attribution.
 
 - Emergency shutdown procedures  
 - Safety Instrumented System (SIS) activation  
@@ -51,20 +51,19 @@ Ransomware does not need to alter ICS logic to stop production. It only needs to
 
 ### 4. Case Study: Bridgestone Americas (2025)
 
-**Date Identified:** September 2, 2025  
-**Impact:** Production halted in facilities across South Carolina and Quebec  
-**Disruption:** Occurred in SCADA-adjacent network space, disabling operational visibility  
-**Relevance:** Demonstrates that ransomware can stop industrial production without accessing or modifying PLC logic.
+Sector: Automotive manufacturing (tires)  
+Disruption: Public reporting described a “limited cyber incident” impacting manufacturing systems. While no OT breach was confirmed, interruption illustrates how manufacturers may pause operations defensively during cyber events.  
+Operational Risk: Even without confirmed OT compromise, loss of ICT or adjacent systems can lead to production pauses to maintain safety and quality control.  
+Insight: Demonstrates that operational disruption can occur without confirmed OT manipulation or malware targeting PLC logic.
 
 ---
 
 ### 5. Case Study: ERG Renewable Energy Operator
 
-**Sector:** Distributed wind and renewable generation  
-**Disruption:** ICT outage removed centralized SCADA oversight  
-**Operational Risk:** Operators became reliant on SIS and limited fallback control paths  
-
-**Insight:** In distributed environments, losing a single remote SCADA server can disable visibility across many geographically separated sites, forcing shutdowns even when field assets remain functional.
+Sector: Distributed wind and renewable generation  
+Disruption: ICT infrastructure disruption reported, but no confirmed production downtime or SCADA outage  
+Operational Risk: Centralized ICT systems often support remote management and vendor networks, meaning ransomware disruption could impede visibility or support processes, even if OT remained operational in this case.  
+Insight: In distributed environments, central monitoring dependencies (e.g., remote SCADA) represent aggregation risk. While ERG’s event did not escalate, similar intrusion paths could scale disruption across many geographically separated assets.
 
 ---
 
@@ -72,19 +71,11 @@ Ransomware does not need to alter ICS logic to stop production. It only needs to
 
 Remote SCADA servers are a high-impact target for ransomware due to their role in centralized monitoring and control. Disruption of these servers forces shutdowns across entire asset portfolios.
 
-**Result:** Wide-scale outages without compromising controllers.
+**Result:** Wide-scale operational outages can occur even if PLCs and field controllers remain untouched.
 
 ---
 
-### 7. MITRE for ICS Mapping
-
-| Technique | Name | Description |
-|-----------|------|-------------|
-| T0828 | Loss of View | Removal or degradation of operator visibility forces shutdowns and increases physical risk |
-
----
-
-### 8. Analyst Judgment
+### 7. Analyst Judgment
 
 LockBit poses an indirect but highly consequential threat to industrial operations. The physical impact emerges from loss of visibility rather than malicious control modification.
 
@@ -92,7 +83,7 @@ LockBit poses an indirect but highly consequential threat to industrial operatio
 
 ---
 
-### 9. Recommended Defenses (OT, SOC, IR)
+### 8. Recommended Defenses (OT, SOC, IR)
 
 **Access and Identity Controls**
 - Enforce MFA for all vendor and remote access
