@@ -31,14 +31,14 @@ LockBit generally does not target PLCs or manipulate process control logic. Its 
 
 ### 3. Industrial Impact
 
-LockBit creates operational consequences when it disrupts visibility systems, including:
+LockBit has potential to create operational consequences if it disrupts visibility systems, including:
 
 - Human Machine Interfaces (HMIs)
 - Engineering Workstations
 - MES / SCADA Operator Terminals
 - Historian / Process Data Servers
 
-Disabling these systems can create conditions consistent with MITRE ICS T0828 (Loss of View), used here as an impact classification — not attacker attribution.
+Disabling these systems can create conditions consistent with MITRE ICS T0828 (Loss of View), used here as an impact classification - not attacker attribution.
 
 - Emergency shutdown procedures  
 - Safety Instrumented System (SIS) activation  
@@ -105,4 +105,4 @@ LockBit poses an indirect but highly consequential threat to industrial operatio
 
 ### Prepared By
 D.S.  
-Threat Intelligence Brief – Industrial Sector
+Threat Intelligence Brief - Industrial Sector
