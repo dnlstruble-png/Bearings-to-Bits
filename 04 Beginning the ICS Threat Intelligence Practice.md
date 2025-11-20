@@ -20,7 +20,7 @@ That made industrial control systems the best place to start.
 
 As part of laying a foundation, I set up RSS feeds. They will help in the long term. However, the incident I chose did not come from them. I began with a search. I looked specifically for ransomware activity affecting industrial operations and kept seeing the name LockBit appear. That began the rabbit hole.
 
-A few articles later, I realized that the most serious problems did not come from tampering with PLC logic. They came from attacks that took away operational visibility. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, followed by a hunch. I skimmed through the techniques and found that, although not the technique was not listed, MITRE ATT&CK for ICS — T0828 (Loss of View) can occur when ransomware encrypts operator visibility systems via other availible techniques.
+A few articles later, I realized that the operational risk did not come from tampering with PLC logic, but from losing visibility into system behavior. At that point, I went directly to MITRE ATT&CK for ICS. I did not start with a framework. I started with a question, then a hunch. I skimmed through the techniques and found that, although the technique itself is not attributed to LockBit, MITRE ATT&CK for ICS — T0828 (Loss of View) can occur when ransomware encrypts operator visibility systems through other techniques.
 
 I did not need MITRE to tell me why Loss of View is dangerous. I already know what it means to lose sight of a process. I have lived inside that world.
 
@@ -64,7 +64,7 @@ This practice is meant to build skill, not perfection. I want to document the le
 
 ### Closing Thought
 
-This first exercise reinforced something important. The danger does not come from malware that alters logic. The danger comes from losing the ability to see what the logic is doing. That is where industrial threat intelligence becomes meaningful. That is the foundation I want to build on in the entries that follow.
+This first exercise reinforced something important. The danger does not come from malware that alters logic. The danger comes from losing the ability to see what the logic is doing. That is where industrial threat intelligence becomes meaningful, and that is the foundation I want to build on in the entries that follow.
 
 ---
 
